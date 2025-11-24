@@ -86,7 +86,9 @@ struct ContentView: View {
 //            .foregroundStyle(.white)
 //            .frame(width: 44, height: 44)
 //            .background(.red.gradient)
-//            .clipShape(.circle)
+//            .clipShape(.rect(cornerRadius: cornerRadius.source))
+//            .contentShape(.rect(cornerRadius: cornerRadius.source))
+//            .opacity(properties.showDeleteView ? 0 : 1)
     }
 }
 
