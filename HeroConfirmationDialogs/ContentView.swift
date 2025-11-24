@@ -66,9 +66,11 @@ struct ContentView: View {
             }
         }
         .padding()
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     var text: some View {
+
         Text("Delete account?")
             .foregroundStyle(.white)
             .fontWeight(.medium)
@@ -78,6 +80,13 @@ struct ContentView: View {
             .clipShape(.rect(cornerRadius: cornerRadius.source))
             .contentShape(.rect(cornerRadius: cornerRadius.source))
             .opacity(properties.showDeleteView ? 0 : 1)
+
+
+//        Image(systemName: "trash.fill")
+//            .foregroundStyle(.white)
+//            .frame(width: 44, height: 44)
+//            .background(.red.gradient)
+//            .clipShape(.circle)
     }
 }
 
@@ -98,13 +107,11 @@ struct DeleteAccountView: View {
     }
 
     var animation: Animation {
-        //.interpolatingSpring(duration: 0.3)
-        .linear(duration: 2)
+        .interpolatingSpring(duration: 0.3)
     }
 
     var sourceAnimation: Animation {
-        //.interpolatingSpring(duration: 0.3)
-        .linear(duration: 1)
+        .interpolatingSpring(duration: 0.3)
     }
 
     var clipShape: AnyShape {
@@ -120,6 +127,7 @@ struct DeleteAccountView: View {
                 .fill(Color.black.opacity(animate ? 0.4 : 0))
 
             VStack {
+                dummyContent()
                 actionButtons()
             }
             .allowsHitTesting(animate)
@@ -173,22 +181,40 @@ struct DeleteAccountView: View {
         .onAppear {
             withAnimation(animation) {
                 properties.animate = true
+                properties.hideSource = true
             }
 
-            Task {
-                withAnimation(sourceAnimation) {
-                    properties.hideSource = true
-                }
-            }
+//            Task {
+//                withAnimation(sourceAnimation) {
+//                    properties.hideSource = true
+//                }
+//            }
         }
     }
 }
 
 private extension DeleteAccountView {
+    func dummyContent() -> some View {
+        VStack(alignment: .leading) {
+            Image(systemName: "exclamationmark.circle")
+                .font(.largeTitle)
+                .foregroundStyle(.red)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("Are you sure")
+                .font(.title2.bold())
+
+            Text("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam auctor quam id massa faucibus dignissim. Nullam eget metus id nisl malesuada condimentum.")
+                .foregroundStyle(.gray)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.bottom, 10)
+    }
+
     func actionButtons() -> some View {
         HStack(spacing: 8) {
             Button {
-                dismiss(false)
+                dismiss(isUserCanceled: false)
             } label: {
                 Text("Cancel")
                     .foregroundStyle(Color.primary)
@@ -199,7 +225,7 @@ private extension DeleteAccountView {
             }
 
             Button {
-
+                dismiss(isUserCanceled: true)
             } label: {
                 Text("Delete")
                     .foregroundStyle(Color.white)
@@ -212,18 +238,19 @@ private extension DeleteAccountView {
         .fontWeight(.medium)
     }
 
-    func dismiss(_ status: Bool) {
+    func dismiss(isUserCanceled: Bool) {
         withAnimation(animation, completionCriteria: .removed) {
             properties.animate = false
         } completion: {
             withoutAnimation {
                 properties.sourceView = .none
                 properties.showDeleteView = false
+                action(isUserCanceled)
             }
         }
 
         Task {
-            withAnimation(sourceAnimation.delay(1)) {
+            withAnimation(sourceAnimation.delay(0.08)) {
                 properties.hideSource = false
             }
         }
