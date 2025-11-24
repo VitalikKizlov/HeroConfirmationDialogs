@@ -14,7 +14,6 @@ struct AnimatedButtonCornerRadius {
 
 struct AnimatedButtonProperties {
     var sourceLocation: CGRect = .zero
-    var sourceView: UIImage?
     var hideSource: Bool = false
     var animate: Bool = false
     var showDeleteView: Bool = false
@@ -23,28 +22,16 @@ struct AnimatedButtonProperties {
 struct ContentView: View {
     let cornerRadius: AnimatedButtonCornerRadius = .init()
     @State private var properties: AnimatedButtonProperties = .init()
-    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         VStack {
             Button {
-                let renderer = ImageRenderer(
-                    content:
-                        text
-                        .frame(
-                            width: properties.sourceLocation.width,
-                            height: properties.sourceLocation.height
-                        )
-                        .clipShape(.rect(cornerRadius: cornerRadius.source))
-                )
-                renderer.scale = displayScale
-                properties.sourceView = renderer.uiImage
-
                 withoutAnimation {
                     properties.showDeleteView = true
                 }
             } label: {
-                text
+                buttonLabel
+                    .opacity(properties.showDeleteView ? 0 : 1)
             }
             .onGeometryChange(for: CGRect.self, of: { proxy in
                 proxy.frame(in: .global)
@@ -56,7 +43,9 @@ struct ContentView: View {
                 DeleteAccountView(
                     cornerRadius: cornerRadius,
                     properties: $properties,
-                    action: { isUserCanceled in
+                    label: {
+                        buttonLabel
+                    }, action: { isUserCanceled in
                         debugPrint("is user canceled: \(isUserCanceled)")
                     }
                 )
@@ -69,8 +58,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
-    var text: some View {
-
+    var buttonLabel: some View {
         Text("Delete account?")
             .foregroundStyle(.white)
             .fontWeight(.medium)
@@ -79,22 +67,13 @@ struct ContentView: View {
             .background(.red.gradient)
             .clipShape(.rect(cornerRadius: cornerRadius.source))
             .contentShape(.rect(cornerRadius: cornerRadius.source))
-            .opacity(properties.showDeleteView ? 0 : 1)
-
-
-//        Image(systemName: "trash.fill")
-//            .foregroundStyle(.white)
-//            .frame(width: 44, height: 44)
-//            .background(.red.gradient)
-//            .clipShape(.rect(cornerRadius: cornerRadius.source))
-//            .contentShape(.rect(cornerRadius: cornerRadius.source))
-//            .opacity(properties.showDeleteView ? 0 : 1)
     }
 }
 
-struct DeleteAccountView: View {
+struct DeleteAccountView<Label: View>: View {
     let cornerRadius: AnimatedButtonCornerRadius
     @Binding var properties: AnimatedButtonProperties
+    let label: () -> Label
 
     var animate: Bool {
         properties.animate
@@ -143,17 +122,14 @@ struct DeleteAccountView: View {
                 GeometryReader {
                     let size = $0.size
 
-                    if let sourceView = properties.sourceView {
-                        Image(uiImage: sourceView)
-                            .resizable()
-                            .frame(
-                                width: animate ? size.width : sourceLocation.width,
-                                height: animate ? size.height : sourceLocation.height
-                            )
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .blur(radius: hideSource ? 10 : 0)
-                            .opacity(hideSource ? 0 : 1)
-                    }
+                    label()
+                        .frame(
+                            width: animate ? size.width : sourceLocation.width,
+                            height: animate ? size.height : sourceLocation.height
+                        )
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .blur(radius: hideSource ? 10 : 0)
+                        .opacity(hideSource ? 0 : 1)
                 }
             }
             .mask {
@@ -164,9 +140,7 @@ struct DeleteAccountView: View {
                     )
             }
             .padding(.horizontal, 8)
-            .visualEffect {
-                content,
-                proxy in
+            .visualEffect { content, proxy in
                 content
                     .offset(
                         x: animate ? 0 : sourceLocation.midX - (proxy.size.width / 2),
@@ -245,7 +219,6 @@ private extension DeleteAccountView {
             properties.animate = false
         } completion: {
             withoutAnimation {
-                properties.sourceView = .none
                 properties.showDeleteView = false
                 action(isUserCanceled)
             }
